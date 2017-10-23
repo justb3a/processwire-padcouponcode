@@ -1,0 +1,72 @@
+{
+    "pad_couponcode": {
+        "name": "pad_couponcode",
+        "fieldgroups_id": "pad_couponcode",
+        "flags": 0,
+        "cache_time": 0,
+        "useRoles": 0,
+        "childrenTemplatesID": 0,
+        "sortfield": "",
+        "noChildren": "",
+        "noParents": "",
+        "childTemplates": [],
+        "parentTemplates": [],
+        "allowPageNum": 0,
+        "allowChangeUser": 0,
+        "redirectLogin": 0,
+        "urlSegments": 0,
+        "https": 0,
+        "slashUrls": 1,
+        "altFilename": "",
+        "guestSearchable": 0,
+        "pageClass": "",
+        "childNameFormat": "",
+        "pageLabelField": "",
+        "noGlobal": 0,
+        "noMove": 0,
+        "noTrash": 0,
+        "noSettings": 0,
+        "noChangeTemplate": 0,
+        "noShortcut": 0,
+        "noUnpublish": 0,
+        "nameContentTab": 0,
+        "noCacheGetVars": "",
+        "noCachePostVars": "",
+        "useCacheForUsers": 0,
+        "cacheExpire": 0,
+        "cacheExpirePages": [],
+        "label": "",
+        "tags": "",
+        "titleNames": 0,
+        "noPrependTemplateFile": 0,
+        "noAppendTemplateFile": 0,
+        "prependFile": "",
+        "appendFile": "",
+        "tabContent": "",
+        "tabChildren": "",
+        "_exportMode": true,
+        "fieldgroupFields": [
+            "title",
+            "pad_couponcode",
+            "pad_limit",
+            "pad_price",
+            "pad_valid_from",
+            "pad_valid_until"
+        ],
+        "fieldgroupContexts": {
+            "pad_couponcode": [],
+            "pad_limit": {
+                "columnWidth": 50
+            },
+            "pad_price": {
+                "columnWidth": 50
+            },
+            "pad_valid_from": {
+                "columnWidth": 50
+            },
+            "pad_valid_until": {
+                "columnWidth": 50
+            }
+        }
+    }
+}

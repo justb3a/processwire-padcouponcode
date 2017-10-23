@@ -1,0 +1,251 @@
+<?php namespace ProcessWire;
+
+/**
+*
+* PadCouponCode
+*
+* See README.md for usage instructions.
+*
+* @author Tabea David <info@justonestep.de>
+* @version 0.0.1
+* @copyright Copyright (c) 2017
+* @see https://github.com/justonestep/processwire-padcouponcode
+* @see http://www.processwire.com
+*/
+
+/**
+* Class PadCouponCode
+*/
+class PadCouponCode extends WireData implements Module {
+
+  protected $cartManager;
+
+  /**
+   * Get module information
+   *
+   * @return array
+   */
+  public static function getModuleInfo() {
+    return array(
+      'title' => 'Coupon Code',
+      'version' => 001,
+      'summary' => 'ProcessWire module that adds the possibility to add coupon codes.',
+      'href' => 'https://github.com/justonestep/processwire-padcouponcode',
+      'singular' => true,
+      'autoload' => true,
+      'icon' => 'money',
+      'requires' => array('PadLoper')
+    );
+  }
+
+  /**
+   * Initialize the module
+   *
+   * ProcessWire calls this when the module is loaded. For 'autoload' modules, this will be called
+   * when ProcessWire's API is ready. As a result, this is a good place to attach hooks.
+   */
+  public function init() {
+    $this->cartManager = $this->modules->get('PadCart');
+    $this->addHookBefore('PadCart::getCart', $this, 'handleCouponCodes', array('priority' => 50));
+    $this->addHookAfter('PadOrderProcess::sendConfirmation', $this, 'deactivateCouponCodes');
+    $this->addHookAfter('PadCart::getProductPrice', $this, 'getRealCouponCodeValue');
+    $this->addHookBefore('InputfieldText::render', $this, 'generateCouponCode');
+  }
+
+  /**
+   * Handle coupon codes
+   *
+   * @param HookEvent $event
+   */
+  public function handleCouponCodes(HookEvent $event) {
+    $this->removeCouponCode();
+    if ($code = $this->input->post->pad_couponcode) {
+      // does the coupon code exist and check whether it is valid
+      $couponPage = $this->pages->findOne("template=pad_couponcode, pad_couponcode=$code, pad_valid_from<=today, pad_valid_until>=today");
+      if (!$couponPage instanceof NullPage) $this->cartManager->addProduct($couponPage->id, 1);
+    }
+  }
+
+  /**
+   * Handle coupon codes
+   *
+   * @param HookEvent $event
+   */
+  public function deactivateCouponCodes(HookEvent $event) {
+    if ($code = $event->object->getOrder()->pad_couponcode) {
+      $couponPage = $this->pages->findOne("template=pad_couponcode, pad_couponcode=$code, pad_valid_from<=today, pad_valid_until>=today");
+      if ($couponPage->pad_limit === 1) $couponPage->setAndSave('status', PAGE::statusHidden);
+    }
+  }
+
+  /**
+   * Handle coupon codes
+   *
+   * @param HookEvent $event
+   */
+  public function getRealCouponCodeValue(HookEvent $event) {
+    $pricefield = $event->object->pricefield;
+    $product = $event->arguments('product');
+    $price = $product->$pricefield;
+    $templateIdCoupon = (int)$this->templates->get('pad_couponcode')->id;
+
+    // check whether this is the special product by id or something else
+    if ((int)$product->template->id === $templateIdCoupon) {
+      $products = $event->object->getCartRaw();
+      $total = 0;
+
+      foreach ($products as $p) {
+        $product = $this->pages->get($p->product_id);
+        if ((int)$product->template->id !== $templateIdCoupon) $total += $product->$pricefield * $p->qty;
+      }
+
+      if ($total < abs($price)) $price = -($total);
+    }
+
+    $event->return = (float) $price;
+  }
+
+  /**
+   * Generate Coupon Code
+   *
+   * @param HookEvent $event
+   */
+  public function generateCouponCode(HookEvent $event) {
+    $field = $event->object;
+    $page = $this->pages->get($this->input->get->id);
+
+    if ($field->name !== 'pad_couponcode') return;
+
+    $templateIdCoupon = (int)$this->templates->get('pad_couponcode')->id;
+
+    if ($page->template->id !== $templateIdCoupon) return;
+
+    // empty field? generate coupon code
+    if (!$field->value) {
+      $code = strtoupper(substr(base_convert(sha1(uniqid(mt_rand())), 16, 36), 0, 10));
+      $field->set('value', $code);
+      $page->setAndSave($field->name, $code);
+    }
+  }
+
+  /**
+   * Remove coupon code
+   * remove all coupon-code items from cart
+   */
+  private function removeCouponCode() {
+    $codes = $this->pages->findIDs('template=pad_couponcode');
+    if (!$codes) return;
+    foreach ($codes as $id) {
+      $cartRowId = $this->cartManager->checkIfProductInCart($id);
+      if ($cartRowId) $this->cartManager->removeProduct($cartRowId);
+    }
+  }
+
+  /**
+   * Get Field data from json file
+   */
+  private function getFieldData() {
+    $fields_json = file_get_contents(__DIR__ . "/data/fields.json");
+    return json_decode($fields_json, true);
+  }
+
+  /**
+   * Get Template data from json file
+   */
+  private function getTemplateData() {
+    $templates_json = file_get_contents(__DIR__ . "/data/templates.json");
+    return json_decode($templates_json, true);
+  }
+
+  /**
+   * Add Fields and Templates
+   */
+  private function addFieldsAndTemplates() {
+    // add fields
+    $fields = $this->getFieldData();
+    $fieldNames = '';
+    foreach ($fields as $name => $data) {
+      $f = new Field();
+      $f->setImportData($data);
+      $f->save();
+      $field_names .= $name . ' ';
+    }
+
+    // add templates
+    $templates = $this->getTemplateData();
+    $templateNames = '';
+    foreach ($templates as $name => $data) {
+      $fg = new Fieldgroup();
+      $fg->name = $name;
+      $templateNames .= $name . ' ';
+      foreach ($data['fieldgroupFields'] as $fieldname) $fg->add($fieldname);
+      $fg->save();
+
+      $t = new Template();
+      $t->setImportData($data) ;
+      $t->save();
+    }
+
+    $this->message("Created fields $field_names");
+    $this->message("Created templates $templateNames");
+  }
+
+  /**
+   * Install Routine
+   * called only when the module is installed
+   *
+   * @access public
+   */
+  public function ___install() {
+    $this->addFieldsAndTemplates();
+
+    // add coupon code field to padorder template
+    $template = $this->templates->get('padorder');
+    $field = $this->fields->get('pad_couponcode');
+    $existingField = $template->fieldgroup->fields->get('pad_customer_END');
+    $template->fieldgroup->insertBefore($field, $existingField);
+    $template->fieldgroup->save();
+
+    // module PadCart: add template as product template
+    $padCartData = $this->modules->getModuleConfigData('PadCart');
+    $templateId = (int)$this->templates->get('pad_couponcode')->id;
+    if (!in_array($templateId, $padCartData['product_templates'])) {
+      $padCartData['product_templates'][] = $templateId;
+      $this->modules->saveModuleConfigData('PadCart', $padCartData);
+    }
+  }
+
+  /**
+   * called only when the module is uninstalled
+   * this should return the site to the same state it was in before the module was installed
+   *
+   * @access public
+   */
+  public function ___uninstall() {
+    // delete pages
+    $padpages = $this->pages->find("template=pad_couponcode, include=all");
+    foreach ($padpages as $p) {
+      if ($p->id) $this->pages->delete($p, true);
+    }
+
+    // delete templates
+    $templates = $this->getTemplateData();
+    foreach ($templates as $name => $data) {
+      $t = $this->templates->get($name);
+      $fg = $this->fieldgroups->get($name);
+      if ($t) $this->templates->delete($t);
+      if ($fg) $this->fieldgroups->delete($fg);
+    }
+
+    // delete fields
+    $fields = $this->getFieldData();
+    foreach($fields as $name => $data) {
+      $f = $this->fields->get($name);
+      if ($f) {
+        $f->flags = Field::flagSystemOverride;
+        $f->flags = 0;
+        $this->fields->delete($f);
+      }
+    }
+  }
+}
