@@ -10,7 +10,7 @@ Just install the module, no configuration is needed.
 
 The module adds a template called `pad_couponcode` and appends it as product template (**PadCart** module settings).
 It creates the following fields and adds them to the template: `pad_couponcode`, `pad_limit`, `pad_valid_from`, `pad_valid_until` and `pad_price`.
-Furthermore it adds the `pad_couponcode` field to the `padorder` template in the last position. If you want to change the position, open **PadOrder** module settings and drag it onto the desired position.
+Furthermore it adds the `pad_couponcode` field to the `padorder` template in the last position. If you want to change the position, open `padorder` template and drag it onto the desired position.
 
 ## Add a coupon code
 
