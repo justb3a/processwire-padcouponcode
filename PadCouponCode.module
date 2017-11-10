@@ -100,6 +100,7 @@ class PadCouponCode extends WireData implements Module {
   public function handleCouponCodes(HookEvent $event) {
     $this->removeCouponCode();
     if ($code = $this->input->post->{$this->fieldName}) {
+      $code = str_replace(' ', '', $code); // remove whitespace
       // does the coupon code exist and check whether it is valid
       $couponPage = $this->pages->findOne("template={$this->templateName}, {$this->fieldName}=$code, pad_valid_from<=today, pad_valid_until>=today");
       if (!$couponPage instanceof NullPage) $this->cartManager->addProduct($couponPage->id, 1);
