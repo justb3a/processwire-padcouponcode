@@ -245,7 +245,7 @@ class PadCouponCode extends WireData implements Module {
 
     // module PadCart: add template as product template
     $padCartData = $this->modules->getModuleConfigData('PadCart');
-    $templateId = $this->template->id;
+    $templateId = $this->templates->get($this->templateName)->id;
     if (!in_array($templateId, $padCartData['product_templates'])) {
       $padCartData['product_templates'][] = $templateId;
       $this->modules->saveModuleConfigData('PadCart', $padCartData);
