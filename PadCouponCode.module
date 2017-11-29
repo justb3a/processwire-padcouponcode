@@ -7,7 +7,7 @@
 * See README.md for usage instructions.
 *
 * @author Tabea David <info@justonestep.de>
-* @version 0.0.1
+* @version 0.0.2
 * @copyright Copyright (c) 2017
 * @see https://github.com/justonestep/processwire-padcouponcode
 * @see http://www.processwire.com
@@ -31,7 +31,7 @@ class PadCouponCode extends WireData implements Module {
   public static function getModuleInfo() {
     return array(
       'title' => 'Coupon Code',
-      'version' => 001,
+      'version' => 002,
       'summary' => 'ProcessWire module that adds the possibility to add coupon codes.',
       'href' => 'https://github.com/justonestep/processwire-padcouponcode',
       'singular' => true,
@@ -51,7 +51,7 @@ class PadCouponCode extends WireData implements Module {
     $this->template = $this->templates->get($this->templateName);
 
     $this->cartManager = $this->modules->get('PadCart');
-    $this->addHookBefore('PadCart::getCart', $this, 'handleCouponCodes', array('priority' => 50));
+    $this->addHookBefore('PadCart::getCart', $this, 'handleCouponCodes', array('priority' => 10));
     $this->addHookAfter('PadCart::getProductPrice', $this, 'getRealCouponCodeValue');
     $this->addHookAfter('PadCart::getQty', $this, 'removeCouponCodeItemFromQty');
     $this->addHookAfter('PadCart::getNumberOfTitles', $this, 'removeCouponCodeItemFromNumberOfTitles');
@@ -192,6 +192,13 @@ class PadCouponCode extends WireData implements Module {
   private function getTemplateData() {
     $templates_json = file_get_contents(__DIR__ . "/data/templates.json");
     return json_decode($templates_json, true);
+  }
+
+  /**
+   * Getter for template name
+   */
+  public function getTemplateName() {
+    return $this->templateName;
   }
 
   /**
